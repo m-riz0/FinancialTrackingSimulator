@@ -14,15 +14,8 @@ namespace FinancialTrackingSimulator.Model
         public decimal Price { get; set; }
         public decimal DailyChange { get; set; }
 
-        // Foreign Keys
-        public int UserID { get; set; }
-        public int StockID { get; set; }
-
         // Navigation properties
-        [ForeignKey("UserID")]
         public User User { get; set; }
-
-        [ForeignKey("StockID")]
-        public Stock Stock { get; set; }
+        public List<Stock> Stocks { get; set; }
     }
 }
