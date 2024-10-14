@@ -58,11 +58,13 @@
 
     public async Task RegisterUser(EditContext editContext)
     {
-        var user = Activator.CreateInstance<User>(); ;
-        await UserStore.SetUserNameAsync(user, Model.Email, CancellationToken.None);
-        var emailStore = (IUserEmailStore<User>)UserStore;
-        await emailStore.SetEmailAsync(user, Model.Email, CancellationToken.None);
+        var user = new User
+            {
+                Email = Model.Email,
+            };
+
         var result = await UserManager.CreateAsync(user, Model.Password);
+        await UserManager.AddToRoleAsync(user, "Customer");
 
         if (!result.Succeeded)
         {
@@ -81,10 +83,17 @@
 
     private sealed class RegisterModel
     {
+        [Required(ErrorMessage = "Please enter your email.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string Email { get; set; } = "";
 
+        [Required(ErrorMessage = "Please enter a password.")]
+        [DataType(DataType.Password)]
         public string Password { get; set; } = "";
 
+        [Required(ErrorMessage = "Please confirm your password.")]
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
     }
 }
