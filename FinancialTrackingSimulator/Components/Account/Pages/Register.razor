@@ -15,34 +15,50 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
+<body style="background-color:#323a56">
 <PageTitle>Register</PageTitle>
 <StatusMessage Message="@statusMessage" IsError="@isError" />
 
-<div class="card">
-    <div class="card-body bg-light">
-        <h4 class="card-title">Register</h4>
+<EditForm OnValidSubmit="RegisterUser" Model="Model" FormName="registerForm">
+    <DataAnnotationsValidator />
 
-        <EditForm OnValidSubmit="RegisterUser" Model="Model" FormName="registerForm">
-            <div class="row g-3">
-                <div class="col-md-12">
-                    <label for="email" class="form-label">Email</label>
-                    <InputText class="form-control" placeholder="Email" @bind-Value="Model.Email" />
-                </div>
+        <div class="container">
+            <div class="row justify-content-center mt-5">
                 <div class="col-md-6">
-                    <label for="password" class="form-label">Password</label>
-                    <InputText type="password" class="form-control" placeholder="Password" @bind-Value="Model.Password" />
-                </div>
-                <div class="col-md-6">
-                    <label for="name" class="form-label">Confirm Password</label>
-                    <InputText type="password" class="form-control" placeholder="Confirm Password" @bind-Value="Model.ConfirmPassword" />
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                    <div class="card" style="border: 2px solid #626980;">
+                        <div class="card-body" style="background-color:#626980">
+                            <h4 class="card-title text-center">Register</h4>
+                                <div class="mb-3">
+                                    <label for="email">Email</label>
+                                    <InputText id="email" class="form-control" placeholder="you@example.com" @bind-Value="Model.Email" />
+                                    <div class="small">
+                                        <ValidationMessage For="@(() => Model!.Email)" />
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password">Password</label>
+                                    <InputText id="password" type="password" class="form-control" placeholder="Password" @bind-Value="Model.Password" />
+                                    <div class="small">
+                                        <ValidationMessage For="@(() => Model!.Password)" />
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirm">Confirm Password</label>
+                                    <InputText id="confirm" type="password" class="form-control" placeholder="Confirm Password" @bind-Value="Model.ConfirmPassword" />
+                                    <div class="small">
+                                        <ValidationMessage For="@(() => Model!.ConfirmPassword)" />
+                                    </div>
+                                </div>
+                                <div class="d-grid gap-2 mb-3">
+                                    <button type="submit" class="btn btn-success">Register</button>
+                                </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </EditForm>
-    </div>
-</div>
+        </div>
+    </EditForm>
+</body>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
