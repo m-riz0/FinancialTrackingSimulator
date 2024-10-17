@@ -12,6 +12,21 @@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Welcome</NavLink>
                 </li>
+
+                <!-- Show Portfolio, Trade, and Watchlist only for authenticated users -->
+                <AuthorizeView>
+                    <Authorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/Portfolio" Match="NavLinkMatch.Prefix">Portfolio</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/Trade" Match="NavLinkMatch.Prefix">Trade</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/Watchlist" Match="NavLinkMatch.Prefix">Watchlist</NavLink>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
             </ul>
             <ul class="nav navbar-nav ml-auto w-100 justify-content-end">
                 <AuthorizeView>

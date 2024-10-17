@@ -1,8 +1,12 @@
 ﻿@page "/Error"
 @using System.Diagnostics
 
+<body style="background-color:#323a56">
 <PageTitle>Error</PageTitle>
 
+ <div class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="card text-center" style="border: 2px solid #626980">
+            <div class="card-body" style="background-color:#626980">
 <h1 class="text-danger">Error.</h1>
 <h2 class="text-danger">An error occurred while processing your request.</h2>
 
@@ -23,6 +27,10 @@
     For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
     and restarting the app.
 </p>
+</div>
+</div>
+</div>
+</body>
 
 @code{
     [CascadingParameter]
