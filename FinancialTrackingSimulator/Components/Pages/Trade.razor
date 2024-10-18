@@ -47,12 +47,24 @@
             </tbody>
         </table>
 
-        <!-- Pagination Buttons -->
-        <div class="pagination" style="text-align: center; margin-top: 20px;">
+        // Pagination Buttons
+        <div class="pagination-container">
             <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
             <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
             <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
         </div>
+
+        <style>
+            .pagination-container {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        </style>
     }
 </body>
 
