@@ -1,13 +1,129 @@
 ﻿@page "/trade"
+@using FinancialTrackingSimulator.Context
+@using FinancialTrackingSimulator.Model
+@using Microsoft.EntityFrameworkCore
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
+@inject DatabaseContext DbContext
 
 <PageTitle>Trade</PageTitle>
 
 <body style="background-color:#323a56">
-<h3>Trade</h3>
+    <h3 style="color: white">Trade</h3>
+
+    <input type="text" @oninput="UpdateSearchTerm" placeholder="Search stocks..." class="form-control" style="margin-bottom: 20px;" />
+
+    @if (stocks == null)
+    {
+        <p style="color: white">Loading stocks...</p>
+    }
+    else if (!pagedStocks.Any())
+    {
+        <p style="color: white">No stocks match your search.</p>
+    }
+    else
+    {
+        <table class="table table-striped" style="color: white">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Daily Change</th>
+                    <th>Other Information</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var stock in pagedStocks)
+                {
+                    <tr>
+                        <td>@stock.Name</td>
+                        <td>@($"${stock.Price:F2}")</td>
+                        <td style="color:@(stock.DailyChange >= 0 ? "green" : "red")">
+                            @(stock.DailyChange >= 0 ? "+" : "")@stock.DailyChange%
+                        </td>
+                        <td>@stock.OtherInformation</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination Buttons -->
+        <div class="pagination" style="text-align: center; margin-top: 20px;">
+            <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
+            <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
+        </div>
+    }
 </body>
 
 @code {
+    private List<Stock> stocks;
+    private List<Stock> filteredStocks;
+    private List<Stock> pagedStocks;
+    private string searchTerm = string.Empty;
 
+    // Pagination variables
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling((double)filteredStocks.Count / pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Fetch stocks from the database
+        stocks = await DbContext.Stocks.ToListAsync();
+        filteredStocks = stocks; // Initially, all stocks are shown
+        UpdatePagedStocks(); // Update stocks to show based on pagination
+    }
+
+    private void UpdateSearchTerm(ChangeEventArgs e)
+    {
+        searchTerm = e.Value.ToString();
+        FilterStocks();
+        currentPage = 1; // Reset to the first page after filtering
+        UpdatePagedStocks();
+    }
+
+    private void FilterStocks()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredStocks = stocks;
+        }
+        else
+        {
+            filteredStocks = stocks
+                .Where(s => s.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void UpdatePagedStocks()
+    {
+        pagedStocks = filteredStocks
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    // Pagination Controls
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            currentPage++;
+            UpdatePagedStocks();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (CanGoPrevious)
+        {
+            currentPage--;
+            UpdatePagedStocks();
+        }
+    }
+
+    private bool CanGoNext => currentPage < totalPages;
+    private bool CanGoPrevious => currentPage > 1;
 }
