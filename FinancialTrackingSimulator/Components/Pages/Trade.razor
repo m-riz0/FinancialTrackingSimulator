@@ -30,7 +30,7 @@
                     <th>Name</th>
                     <th>Price</th>
                     <th>Daily Change</th>
-                    <th>Other Information</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,13 +42,17 @@
                         <td style="color:@(stock.DailyChange >= 0 ? "green" : "red")">
                             @(stock.DailyChange >= 0 ? "+" : "")@stock.DailyChange%
                         </td>
-                        <td>@stock.OtherInformation</td>
+                        <td>
+                            <button class="btn btn-success">Add Stock</button>
+                            <button class="btn btn-danger">Performance Prediction</button>
+                            <button class="btn btn-primary">View</button>
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
 
-        // Pagination Buttons
+        // Pagination Buttons 
         <div class="pagination-container">
             <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
             <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
