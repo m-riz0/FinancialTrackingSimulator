@@ -5,7 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
-@inject DatabaseContext DbContext
+@inject StockPriceService StockPriceService
 
 <PageTitle>Trade</PageTitle>
 
@@ -14,7 +14,7 @@
 
     <input type="text" @oninput="UpdateSearchTerm" placeholder="Search stocks..." class="form-control" style="margin-bottom: 20px;" />
 
-    @if (stocks == null)
+    @if (pagedStocks == null)
     {
         <p style="color: white">Loading stocks...</p>
     }
@@ -52,30 +52,15 @@
             </tbody>
         </table>
 
-        // Pagination Buttons 
         <div class="pagination-container">
             <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
             <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
             <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
         </div>
-
-        <style>
-            .pagination-container {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-        </style>
     }
 </body>
 
 @code {
-    private List<Stock> stocks;
-    private List<Stock> filteredStocks;
     private List<Stock> pagedStocks;
     private string searchTerm = string.Empty;
 
@@ -84,12 +69,34 @@
     private int pageSize = 10;
     private int totalPages => (int)Math.Ceiling((double)filteredStocks.Count / pageSize);
 
-    protected override async Task OnInitializedAsync()
+    private List<Stock> stocks;
+    private List<Stock> filteredStocks;
+
+    protected override void OnInitialized()
     {
-        // Fetch stocks from the database
-        stocks = await DbContext.Stocks.ToListAsync();
+        // Use the stock data from StockPriceService
+        stocks = StockPriceService.GetAllStocks();
         filteredStocks = stocks; // Initially, all stocks are shown
         UpdatePagedStocks(); // Update stocks to show based on pagination
+
+        // Subscribe to the event when the component is initialized
+        StockPriceService.OnPricesUpdated += RefreshUI;
+    }
+
+    private void RefreshUI()
+    {
+        // Re-filter and update stocks when prices are updated
+        FilterStocks();
+        UpdatePagedStocks();
+
+        // Ensure the UI update happens on the correct thread
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        // Unsubscribe from the event when the component is destroyed to avoid memory leaks
+        StockPriceService.OnPricesUpdated -= RefreshUI;
     }
 
     private void UpdateSearchTerm(ChangeEventArgs e)

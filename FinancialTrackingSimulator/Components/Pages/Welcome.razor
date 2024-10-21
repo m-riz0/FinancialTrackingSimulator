@@ -1,10 +1,10 @@
 ﻿@page "/"
 @inject NavigationManager NavigationManager
 
-<body style="background-color:#323a56">
+<body style="background-color:#323a56; display: flex; flex-direction: column; min-height: 100vh;">
     <PageTitle>Welcome</PageTitle>
 
-    <div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="container d-flex justify-content-center align-items-center flex-grow-1">
         <div class="card text-center" style="border: 2px solid #626980">
             <div class="card-body" style="background-color:#626980">
                 <h1>Welcome to the</h1>
@@ -12,5 +12,9 @@
                 <h1>Simulator</h1>
             </div>
         </div>
+    </div>
+
+    <div class="text-center" style="color: white; margin-bottom: 10px;">
+        <small>Note: This system is purely a simulation.</small>
     </div>
 </body>
