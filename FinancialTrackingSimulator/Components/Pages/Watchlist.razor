@@ -1,13 +1,190 @@
 ﻿@page "/watchlist"
+@using FinancialTrackingSimulator.Context
+@using FinancialTrackingSimulator.Model
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
 @attribute [Authorize]
+@inject StockPriceService StockPriceService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Watchlist</PageTitle>
 
 <body style="background-color:#323a56">
     <h3 style="color: white">Watchlist</h3>
+
+    <!-- Search bar to search for stocks in the StockPriceService -->
+    <input type="text" @oninput="UpdateSearchTerm" placeholder="Search stocks to add..." class="form-control" style="margin-bottom: 20px;" />
+
+    <!-- Display search results from StockPriceService -->
+    @if (searchedStocks != null && searchedStocks.Any())
+    {
+        <table class="table" style="color: white">
+            <tbody>
+                @foreach (var stock in searchedStocks)
+                {
+                    <tr>
+                        <td>@stock.Name</td>
+                        <td>@($"${stock.Price:F2}")</td>
+                        <td>
+                            <button class="btn btn-success" @onclick="() => AddToWatchlist(stock)">Add Stock</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <!-- Watchlist Table -->
+    @if (watchlistStocks == null || !watchlistStocks.Any())
+    {
+        <p style="color: white">Your watchlist is currently empty. Add stocks to track their prices.</p>
+    }
+    else
+    {
+        <table class="table table-striped" style="color: white">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Daily Change</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var stock in pagedWatchlistStocks)
+                {
+                    <tr>
+                        <td>@stock.Name</td>
+                        <td>@($"${stock.Price:F2}")</td>
+                        <td style="color:@(stock.DailyChange >= 0 ? "green" : "red")">
+                            @(stock.DailyChange >= 0 ? "+" : "")@stock.DailyChange%
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" @onclick="() => RemoveFromWatchlist(stock)">Remove</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container">
+            <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
+            <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
+        </div>
+
+        <style>
+            .pagination-container {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        </style>
+    }
 </body>
 
 @code {
+    private List<Stock> watchlistStocks = new List<Stock>();
+    private List<Stock> pagedWatchlistStocks = new List<Stock>();
+    private List<Stock> searchedStocks;
+    private string searchTerm = string.Empty;
 
+    // Pagination variables
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling((double)watchlistStocks.Count / pageSize);
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to stock price updates
+        StockPriceService.OnPricesUpdated += RefreshUI;
+        UpdatePagedWatchlist(); // Initialize the paginated watchlist
+    }
+
+    private void RefreshUI()
+    {
+        // Reapply filters for search and watchlist when prices update
+        SearchStocks();
+        UpdatePagedWatchlist();
+        InvokeAsync(StateHasChanged); // Ensure UI updates correctly
+    }
+
+    public void Dispose()
+    {
+        // Unsubscribe from event to avoid memory leaks
+        StockPriceService.OnPricesUpdated -= RefreshUI;
+    }
+
+    // Update the pagedWatchlistStocks based on the current page
+    private void UpdatePagedWatchlist()
+    {
+        pagedWatchlistStocks = watchlistStocks
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            currentPage++;
+            UpdatePagedWatchlist();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (CanGoPrevious)
+        {
+            currentPage--;
+            UpdatePagedWatchlist();
+        }
+    }
+
+    private bool CanGoNext => currentPage < totalPages;
+    private bool CanGoPrevious => currentPage > 1;
+
+    // Search for stocks in the StockPriceService
+    private void UpdateSearchTerm(ChangeEventArgs e)
+    {
+        searchTerm = e.Value.ToString();
+        SearchStocks();
+    }
+
+    private void SearchStocks()
+    {
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            searchedStocks = StockPriceService.GetAllStocks()
+                .Where(s => s.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        else
+        {
+            searchedStocks = null; // Clear search results if the search term is empty
+        }
+    }
+
+    // Add a stock to the user's watchlist
+    private void AddToWatchlist(Stock stock)
+    {
+        if (!watchlistStocks.Any(s => s.Id == stock.Id))
+        {
+            watchlistStocks.Add(stock);
+            UpdatePagedWatchlist();
+        }
+    }
+
+    // Remove a stock from the user's watchlist
+    private void RemoveFromWatchlist(Stock stock)
+    {
+        watchlistStocks.Remove(stock);
+        UpdatePagedWatchlist();
+    }
 }

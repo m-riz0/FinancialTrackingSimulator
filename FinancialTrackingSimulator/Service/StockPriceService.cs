@@ -69,7 +69,7 @@ public class StockPriceService
         };
 
         // Set up a timer to simulate price changes every minute 
-        _timer = new Timer(SimulatePriceChanges, null, TimeSpan.Zero, TimeSpan.FromSeconds(60)); 
+        _timer = new Timer(SimulatePriceChanges, null, TimeSpan.Zero, TimeSpan.FromSeconds(30)); 
     }
 
     // Simulate price changes for all stocks in-memory
