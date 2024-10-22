@@ -26,7 +26,7 @@
                         <td>@stock.Name</td>
                         <td>@($"${stock.Price:F2}")</td>
                         <td>
-                            <button class="btn btn-success" @onclick="() => AddToWatchlist(stock)">Add Stock</button>
+                            <button class="btn btn-success" @onclick="() => AddToWatchlist(stock)">Add to Watchlist</button>
                         </td>
                     </tr>
                 }
@@ -61,6 +61,7 @@
                         </td>
                         <td>
                             <button class="btn btn-danger" @onclick="() => RemoveFromWatchlist(stock)">Remove</button>
+                            <button class="btn btn-primary">View</button>
                         </td>
                     </tr>
                 }
@@ -73,18 +74,6 @@
             <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
             <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
         </div>
-
-        <style>
-            .pagination-container {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-        </style>
     }
 </body>
 
