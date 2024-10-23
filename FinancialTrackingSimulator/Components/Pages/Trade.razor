@@ -45,7 +45,7 @@
                         <td>
                             <button class="btn btn-success">Add Stock</button>
                             <button class="btn btn-danger">Performance Prediction</button>
-                            <button class="btn btn-primary">View</button>
+                            <button class="btn btn-primary" @onclick="() => NavigateToStockInfo(stock.Id)">View</button>
                         </td>
                     </tr>
                 }
@@ -150,4 +150,10 @@
 
     private bool CanGoNext => currentPage < totalPages;
     private bool CanGoPrevious => currentPage > 1;
+
+    // Navigate to the stock information page based on the stock's Id
+    private void NavigateToStockInfo(int stockId)
+    {
+        NavigationManager.NavigateTo($"/stockinformation/{stockId}");
+    }
 }

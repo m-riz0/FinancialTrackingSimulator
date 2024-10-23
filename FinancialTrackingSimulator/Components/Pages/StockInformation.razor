@@ -1,0 +1,45 @@
+﻿@page "/stockinformation/{id:int}"
+@using FinancialTrackingSimulator.Context
+@using FinancialTrackingSimulator.Model
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject NavigationManager NavigationManager
+@inject DatabaseContext DbContext
+
+<PageTitle>Stock Information</PageTitle>
+
+<body style="background-color:#323a56">
+<h3>Stock Information</h3>
+
+@if (stock != null)
+{
+    <div>
+        <h4>@stock.Name</h4>
+        <p><strong>Price:</strong> @stock.Price</p>
+        <p><strong>Daily Change:</strong> @stock.DailyChange%</p>
+        <!-- Add more stock details as needed -->
+    </div>
+}
+else
+{
+    <p>No stock found for that ID</p>
+}
+</body>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Stock stock;
+
+    protected override async Task OnInitializedAsync()
+    {
+        stock = await DbContext.Stocks.FirstOrDefaultAsync(s => s.Id == Id);
+        if (stock == null)
+        {
+            // Optionally, navigate to a 404 page or handle error
+            NavigationManager.NavigateTo("/notfound");
+        }
+    }
+}

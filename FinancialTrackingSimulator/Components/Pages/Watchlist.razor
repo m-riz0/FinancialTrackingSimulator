@@ -61,7 +61,7 @@
                         </td>
                         <td>
                             <button class="btn btn-danger" @onclick="() => RemoveFromWatchlist(stock)">Remove</button>
-                            <button class="btn btn-primary">View</button>
+                            <button class="btn btn-primary" @onclick="() => NavigateToStockInfo(stock.Id)">View</button>
                         </td>
                     </tr>
                 }
@@ -176,4 +176,11 @@
         watchlistStocks.Remove(stock);
         UpdatePagedWatchlist();
     }
+
+    // Navigate to the stock information page based on the stock's Id
+    private void NavigateToStockInfo(int stockId)
+    {
+        NavigationManager.NavigateTo($"/stockinformation/{stockId}");
+    }
+
 }
