@@ -9,23 +9,77 @@
 
 <PageTitle>Stock Information</PageTitle>
 
-<body style="background-color:#323a56">
-<h3 style="color: white">Stock Information</h3>
+<body style="background-color:#323a56; color: white; font-family: Arial, sans-serif;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <h3>Stock Information</h3>
 
-@if (stock != null)
-{
-    <div>
-        <h4 style="color: white">@stock.Name</h4>
-        <p style="color: white"><strong>Price:</strong> @stock.Price</p>
-        <p style="color: white"><strong>Daily Change:</strong> @stock.DailyChange%</p>
-        <p style="color: white">@stock.OtherInformation</p>
-        <!-- Add more stock details as needed -->
+        @if (stock != null)
+        {
+            <!-- Stock Info Header with name and price -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <!-- Stock Name and Price -->
+                <div>
+                    <h4 style="font-size: 28px;">@stock.Name</h4>
+                    <div style="display: flex; align-items: center;">
+                        <p style="font-size: 28px; margin: 0;">$@stock.Price</p>
+                        <!-- Daily Change Badge next to the Price -->
+                        <span style="background-color: @GetChangeColor(stock.DailyChange); margin-left: 15px; padding: 10px 15px; border-radius: 5px; font-size: 18px;">
+                            @stock.DailyChange%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Graph and Buttons Section -->
+            <div style="display: flex; margin-top: 20px;">
+                <!-- Graph Placeholder -->
+                <div style="width: 60%; background-color: #626980; color: black; padding: 20px; height: 300px;">
+                    <p>Graph</p>
+                </div>
+
+                <!-- Add to Portfolio / Add to Watchlist -->
+                <div style="width: 40%; display: flex; flex-direction: column; justify-content: space-between; padding-left: 20px;">
+                    <div>
+                        <button class="btn btn-success" style="color: white; width: 100%; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: none;">Add to Portfolio</button>
+                        <button class="btn btn-success" style="color: white; width: 100%; padding: 15px; border-radius: 5px; border: none;">Add to Watchlist</button>
+                    </div>
+                    <div style="background-color: #626980; color: black; padding: 20px; height: 150px;">
+                        <h5 style="margin-top: 0;">Numerical Details</h5>
+                        <p>Numerical details will be displayed here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Information Section -->
+            <div style="background-color: #626980; color: black; padding: 20px; margin-top: 20px;">
+                <h5>Stock Information</h5>
+                <p>@stock.OtherInformation</p>
+            </div>
+
+            <!-- Recommended Stocks Section -->
+            <div style="margin-top: 20px;">
+                <h5>Recommended Stocks</h5>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    @foreach (var recommendedStock in recommendedStocks)
+                    {
+                        <div style="background-color: #626980; color: black; padding: 10px; border-radius: 5px;">
+                            <p><strong>@recommendedStock.Name</strong></p>
+                            <p>Price: $@recommendedStock.Price</p>
+                            <p style="color: @GetChangeColor(recommendedStock.DailyChange);">Change: @recommendedStock.DailyChange%</p>
+                            <!-- View Button to navigate to the stock's information page -->
+                            <button class="btn btn-primary" @onclick="() => NavigateToStock(recommendedStock.Id)" style="color: white; border: none; padding: 10px; border-radius: 5px;">
+                                View
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <p>No stock found for that ID</p>
+        }
     </div>
-}
-else
-{
-    <p>No stock found for that ID</p>
-}
 </body>
 
 @code {
@@ -33,14 +87,37 @@ else
     public int Id { get; set; }
 
     private Stock stock;
+    private List<Stock> recommendedStocks = new List<Stock>();
 
     protected override async Task OnInitializedAsync()
     {
+        // Fetch the main stock
         stock = await DbContext.Stocks.FirstOrDefaultAsync(s => s.Id == Id);
+
+        // Fetch all stocks (excluding the current one) and randomize the selection in memory
+        var allStocks = await DbContext.Stocks
+            .Where(s => s.Id != Id)
+            .ToListAsync();
+
+        // Select 4 random stocks in memory
+        recommendedStocks = allStocks.OrderBy(s => Guid.NewGuid()).Take(4).ToList();
+
         if (stock == null)
         {
             // Optionally, navigate to a 404 page or handle error
             NavigationManager.NavigateTo("/notfound");
         }
+    }
+
+    // Helper method to get color based on daily change (positive or negative)
+    private string GetChangeColor(decimal dailyChange)
+    {
+        return dailyChange >= 0 ? "#4CAF50" : "#F44336"; // Green for positive, red for negative
+    }
+
+    // Navigate to the stock information page of the selected stock
+    private void NavigateToStock(int stockId)
+    {
+        NavigationManager.NavigateTo($"/stockinformation/{stockId}");
     }
 }
