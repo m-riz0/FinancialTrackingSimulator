@@ -1,0 +1,47 @@
+﻿@using FinancialTrackingSimulator.Context
+@using FinancialTrackingSimulator.Model
+@inject DatabaseContext DbContext
+
+@code {
+    [Parameter]
+    public Stock StockToAdd { get; set; }
+
+    [Parameter]
+    public Watchlist UserWatchlist { get; set; } // For Watchlist
+
+    [Parameter]
+    public Portfolio UserPortfolio { get; set; } // For Portfolio
+
+    [Parameter]
+    public EventCallback OnStockAdded { get; set; }
+
+    public async Task AddStockAsync()
+    {
+        if (StockToAdd != null)
+        {
+            // Determine if the stock is already in the user's Watchlist or Portfolio
+            var isAlreadyInWatchlist = UserWatchlist != null && UserWatchlist.Stocks.Any(s => s.Id == StockToAdd.Id);
+            var isAlreadyInPortfolio = UserPortfolio != null && UserPortfolio.Stocks.Any(s => s.Id == StockToAdd.Id);
+
+            if (!isAlreadyInWatchlist && !isAlreadyInPortfolio)
+            {
+                if (UserWatchlist != null)
+                {
+                    UserWatchlist.Stocks.Add(StockToAdd);
+                }
+                else if (UserPortfolio != null)
+                {
+                    UserPortfolio.Stocks.Add(StockToAdd);
+                }
+
+                await DbContext.SaveChangesAsync();
+
+                // Notify the parent component if needed
+                if (OnStockAdded.HasDelegate)
+                {
+                    await OnStockAdded.InvokeAsync();
+                }
+            }
+        }
+    }
+}
