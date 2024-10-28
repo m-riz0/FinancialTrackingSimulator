@@ -7,6 +7,9 @@ public class StockPriceService
     private readonly Timer _timer;
     public event Action OnPricesUpdated; // This will notify the UI to refresh when prices update
 
+    // Event to notify when a specific stock is updated
+    public event Action<Stock> StockUpdated;
+
     public StockPriceService()
     {
         _random = new Random();
@@ -92,6 +95,9 @@ public class StockPriceService
 
             // Ensure price doesn't go below zero
             if (stock.Price < 0) stock.Price = 0;
+
+            // Invoke the StockUpdated event to notify about this specific stock update
+            StockUpdated?.Invoke(stock);
         }
 
         // Notify any components that the prices have been updated

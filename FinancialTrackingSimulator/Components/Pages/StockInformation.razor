@@ -6,6 +6,7 @@
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
 @inject DatabaseContext DbContext
+@inject StockPriceService StockPriceService
 
 <PageTitle>Stock Information</PageTitle>
 
@@ -17,13 +18,16 @@
         {
             <!-- Stock Info Header with name and price -->
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <!-- Stock Name and Price -->
+                <!-- Stock Name and Price Badge -->
                 <div>
                     <h4 style="font-size: 28px;">@stock.Name</h4>
                     <div style="display: flex; align-items: center;">
-                        <p style="font-size: 28px; margin: 0;">$@stock.Price</p>
+                        <!-- Price Badge with same color as View button -->
+                        <span style="background-color: #106cfc; margin-right: 15px; padding: 10px 15px; border-radius: 5px; font-size: 18px; color: white;">
+                            $@stock.Price.ToString("F2")
+                        </span>
                         <!-- Daily Change Badge next to the Price -->
-                        <span style="background-color: @GetChangeColor(stock.DailyChange); margin-left: 15px; padding: 10px 15px; border-radius: 5px; font-size: 18px;">
+                        <span style="background-color: @GetChangeColor(stock.DailyChange); padding: 10px 15px; border-radius: 5px; font-size: 18px; color: white;">
                             @stock.DailyChange%
                         </span>
                     </div>
@@ -43,17 +47,20 @@
                         <button class="btn btn-success" style="color: white; width: 100%; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: none;">Add to Portfolio</button>
                         <button class="btn btn-success" style="color: white; width: 100%; padding: 15px; border-radius: 5px; border: none;">Add to Watchlist</button>
                     </div>
+                    <div style="margin-top: 20px;">
                     <div style="background-color: #626980; color: black; padding: 20px; height: 150px;">
-                        <h5 style="margin-top: 0;">Numerical Details</h5>
                         <p>Numerical details will be displayed here</p>
                     </div>
                 </div>
             </div>
+            </div>
 
             <!-- Stock Information Section -->
-            <div style="background-color: #626980; color: black; padding: 20px; margin-top: 20px;">
-                <h5>Stock Information</h5>
+            <div style="margin-top: 20px;">
+            <h5>Details</h5>
+            <div style="background-color: #626980; color: black; padding: 20px; margin-top: 10px;">
                 <p>@stock.OtherInformation</p>
+            </div>
             </div>
 
             <!-- Recommended Stocks Section -->
@@ -62,12 +69,28 @@
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                     @foreach (var recommendedStock in recommendedStocks)
                     {
-                        <div style="background-color: #626980; color: black; padding: 10px; border-radius: 5px;">
+                        <div style="background-color: #626980; color: black; padding: 10px; border-radius: 5px; display: flex; flex-direction: column; justify-content: space-between; min-height: 200px;">
                             <p><strong>@recommendedStock.Name</strong></p>
-                            <p>Price: $@recommendedStock.Price</p>
-                            <p style="color: @GetChangeColor(recommendedStock.DailyChange);">Change: @recommendedStock.DailyChange%</p>
-                            <!-- View Button to navigate to the stock's information page -->
-                            <button class="btn btn-primary" @onclick="() => NavigateToStock(recommendedStock.Id)" style="color: white; border: none; padding: 10px; border-radius: 5px;">
+
+                            <!-- Price Badge -->
+                            <p style="color: black; margin: 0;">
+                                Price:
+                                <span style="background-color: #106cfc; padding: 5px 10px; border-radius: 5px; color: white;">
+                                    $@recommendedStock.Price.ToString("F2")
+                                </span>
+                            </p>
+                            <p></p>
+
+                            <!-- Daily Change Badge -->
+                            <p style="color: black; margin: 0;">
+                                Daily Change:
+                                <span style="background-color: @GetChangeColor(recommendedStock.DailyChange); padding: 5px 10px; border-radius: 5px; color: white;">
+                                    @recommendedStock.DailyChange%
+                                </span>
+                            </p>
+
+                            <!-- View Button at Bottom -->
+                            <button class="btn btn-primary" @onclick="() => NavigateToStock(recommendedStock.Id)" style="color: white; border: none; padding: 10px; border-radius: 5px; margin-top: auto;">
                                 View
                             </button>
                         </div>
@@ -91,6 +114,18 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadStockData();
+        SubscribeToStockUpdates();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadStockData();
+        SubscribeToStockUpdates();
+    }
+
+    private async Task LoadStockData()
+    {
         // Fetch the main stock
         stock = await DbContext.Stocks.FirstOrDefaultAsync(s => s.Id == Id);
 
@@ -101,18 +136,47 @@
 
         // Select 4 random stocks in memory
         recommendedStocks = allStocks.OrderBy(s => Guid.NewGuid()).Take(4).ToList();
+    }
 
-        if (stock == null)
+    private void SubscribeToStockUpdates()
+    {
+        // Unsubscribe first to prevent multiple subscriptions
+        StockPriceService.StockUpdated -= OnStockUpdated;
+        // Subscribe to the event
+        StockPriceService.StockUpdated += OnStockUpdated;
+    }
+
+    private void OnStockUpdated(Stock updatedStock)
+    {
+        // Update the main stock if it's the one being viewed
+        if (updatedStock.Id == stock.Id)
         {
-            // Optionally, navigate to a 404 page or handle error
-            NavigationManager.NavigateTo("/notfound");
+            stock.Price = updatedStock.Price;
+            stock.DailyChange = updatedStock.DailyChange;
         }
+
+        // Update recommended stocks if applicable
+        var recommended = recommendedStocks.FirstOrDefault(s => s.Id == updatedStock.Id);
+        if (recommended != null)
+        {
+            recommended.Price = updatedStock.Price;
+            recommended.DailyChange = updatedStock.DailyChange;
+        }
+
+        // Trigger re-render to reflect updated prices
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Clean up event subscription when the component is disposed
+    public void Dispose()
+    {
+        StockPriceService.StockUpdated -= OnStockUpdated;
     }
 
     // Helper method to get color based on daily change (positive or negative)
     private string GetChangeColor(decimal dailyChange)
     {
-        return dailyChange >= 0 ? "#4CAF50" : "#F44336"; // Green for positive, red for negative
+        return dailyChange >= 0 ? "#208454" : "#e03444"; // Green for positive, red for negative
     }
 
     // Navigate to the stock information page of the selected stock
