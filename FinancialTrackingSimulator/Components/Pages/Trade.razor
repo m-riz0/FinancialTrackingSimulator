@@ -44,7 +44,7 @@
                         </td>
                         <td>
                             <button class="btn btn-success">Add Stock</button>
-                            <button class="btn btn-danger">Performance Prediction</button>
+                            <button class="btn btn-danger" @onclick="() => OpenPredictionPopup(stock)">Performance Prediction</button>
                             <button class="btn btn-primary" @onclick="() => NavigateToStockInfo(stock.Id)">View</button>
                         </td>
                     </tr>
@@ -58,11 +58,46 @@
             <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
         </div>
     }
+
+    @if (showPredictionPopup)
+    {
+        <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Performance Prediction for @selectedStock?.Name</h5>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Current Price:</strong> @($"{selectedStock?.Price:C}")</p>
+                        <p>
+                            <strong>Daily Change:</strong> <span style="color:@(selectedStock?.DailyChange >= 0 ? "green" : "red")">
+                                @(selectedStock?.DailyChange >= 0 ? "+" : "")@selectedStock?.DailyChange%
+                            </span>
+                        </p>
+
+                        <p>Would you like to predict if the value of this stock will rise or fall? (Note: The prediction is not always accurate.)</p>
+                        <p>(If the value of the stock updates, press the 'Predict' button again to re-predict its performance.)</p>
+                        @if (predictionResult != null)
+                        {
+                            <p><strong>Prediction:</strong> The stock value is expected to @predictionResult.</p>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" @onclick="MakePrediction">Predict</button>
+                        <button class="btn btn-danger" @onclick="ClosePredictionPopup">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </body>
 
 @code {
     private List<Stock> pagedStocks;
     private string searchTerm = string.Empty;
+    private Stock selectedStock;
+    private bool showPredictionPopup = false;
+    private string predictionResult;
 
     // Pagination variables
     private int currentPage = 1;
@@ -74,28 +109,22 @@
 
     protected override void OnInitialized()
     {
-        // Use the stock data from StockPriceService
         stocks = StockPriceService.GetAllStocks();
-        filteredStocks = stocks; // Initially, all stocks are shown
-        UpdatePagedStocks(); // Update stocks to show based on pagination
-
-        // Subscribe to the event when the component is initialized
+        filteredStocks = stocks;
+        UpdatePagedStocks();
         StockPriceService.OnPricesUpdated += RefreshUI;
+        StockPriceService.StockUpdated += OnStockUpdated;
     }
 
     private void RefreshUI()
     {
-        // Re-filter and update stocks when prices are updated
         FilterStocks();
         UpdatePagedStocks();
-
-        // Ensure the UI update happens on the correct thread
         InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        // Unsubscribe from the event when the component is destroyed to avoid memory leaks
         StockPriceService.OnPricesUpdated -= RefreshUI;
     }
 
@@ -103,7 +132,7 @@
     {
         searchTerm = e.Value.ToString();
         FilterStocks();
-        currentPage = 1; // Reset to the first page after filtering
+        currentPage = 1;
         UpdatePagedStocks();
     }
 
@@ -129,7 +158,6 @@
             .ToList();
     }
 
-    // Pagination Controls
     private void NextPage()
     {
         if (CanGoNext)
@@ -151,9 +179,35 @@
     private bool CanGoNext => currentPage < totalPages;
     private bool CanGoPrevious => currentPage > 1;
 
-    // Navigate to the stock information page based on the stock's Id
     private void NavigateToStockInfo(int stockId)
     {
         NavigationManager.NavigateTo($"/stockinformation/{stockId}");
+    }
+
+    private void OnStockUpdated(Stock updatedStock)
+    {
+        if (selectedStock != null && selectedStock.Id == updatedStock.Id)
+        {
+            selectedStock = updatedStock;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OpenPredictionPopup(Stock stock)
+    {
+        selectedStock = stock;
+        showPredictionPopup = true;
+        predictionResult = null;
+    }
+
+    private void ClosePredictionPopup()
+    {
+        showPredictionPopup = false;
+        selectedStock = null;
+    }
+
+    private void MakePrediction()
+    {
+        predictionResult = StockPriceService.PredictStockTrend(selectedStock);
     }
 }

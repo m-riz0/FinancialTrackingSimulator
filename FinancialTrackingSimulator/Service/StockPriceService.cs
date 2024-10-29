@@ -72,7 +72,7 @@ public class StockPriceService
         };
 
         // Set up a timer to simulate price changes every minute 
-        _timer = new Timer(SimulatePriceChanges, null, TimeSpan.Zero, TimeSpan.FromSeconds(1)); 
+        _timer = new Timer(SimulatePriceChanges, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
     }
 
     // Simulate price changes for all stocks in-memory
@@ -114,6 +114,25 @@ public class StockPriceService
     public Stock GetStockById(int id)
     {
         return _stockData.ContainsKey(id) ? _stockData[id] : null;
+    }
+
+    // Predict if the stock value will rise or fall on the next update
+    public string PredictStockTrend(Stock stock)
+    {
+        // Basic prediction logic based on recent trend
+        if (stock.DailyChange > 0)
+        {
+            return "rise"; // Predict rise if recent trend is positive
+        }
+        else if (stock.DailyChange < 0)
+        {
+            return "fall"; // Predict fall if recent trend is negative
+        }
+        else
+        {
+            // In case of no recent trend, make a random choice
+            return _random.Next(2) == 0 ? "rise" : "fall";
+        }
     }
 }
 
