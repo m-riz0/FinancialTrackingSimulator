@@ -3,6 +3,7 @@
 @using FinancialTrackingSimulator.Model
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using FinancialTrackingSimulator.Components.Shared
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
 @inject DatabaseContext DbContext
@@ -36,7 +37,6 @@
 
             <!-- Stock Graph and Buttons Section -->
             <div style="display: flex; margin-top: 20px;">
-                <!-- Graph Placeholder -->
                 <div style="width: 60%; background-color: #626980; color: black; padding: 20px; height: 300px;">
                     <p>Graph</p>
                 </div>
@@ -57,10 +57,10 @@
 
             <!-- Stock Information Section -->
             <div style="margin-top: 20px;">
-            <h5>Details</h5>
-            <div style="background-color: #626980; color: black; padding: 20px; margin-top: 10px;">
-                <p>@stock.OtherInformation</p>
-            </div>
+                <h5>Details</h5>
+                <div style="background-color: #626980; color: black; padding: 20px; margin-top: 10px;">
+                    <p>@stock.OtherInformation</p>
+                </div>
             </div>
 
             <!-- Recommended Stocks Section -->
