@@ -17,48 +17,45 @@
 
         @if (stock != null)
         {
-            <!-- Stock Info Header with name and price -->
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <!-- Stock Name and Price Badge -->
                 <div>
                     <h4 style="font-size: 28px;">@stock.Name</h4>
                     <div style="display: flex; align-items: center;">
                         <!-- Price Badge with same color as View button -->
-                        <span style="background-color: #106cfc; margin-right: 15px; padding: 10px 15px; border-radius: 5px; font-size: 18px; color: white;">
+                        <span style="background-color: #106cfc; margin-right: 15px; padding: 10px 15px; border-radius: 5px; font-size: 18px; color: white; line-height: 1.5;">
                             $@stock.Price.ToString("F2")
                         </span>
                         <!-- Daily Change Badge next to the Price -->
-                        <span style="background-color: @GetChangeColor(stock.DailyChange); padding: 10px 15px; border-radius: 5px; font-size: 18px; color: white;">
+                        <span style="background-color: @GetChangeColor(stock.DailyChange); padding: 10px 15px; border-radius: 5px; font-size: 18px; color: white; line-height: 1.5;">
                             @stock.DailyChange%
                         </span>
                     </div>
                 </div>
+
+                <!-- Add to Portfolio / Add to Watchlist Buttons -->
+                <div style="display: flex; gap: 15px; align-items: center; margin-top: 25px;">
+                    <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;">
+                        Add to Portfolio
+                    </button>
+                    <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;">
+                        Add to Watchlist
+                    </button>
+                </div>
             </div>
 
-            <!-- Stock Graph and Buttons Section -->
-            <div style="display: flex; margin-top: 20px;">
-                <div style="width: 60%; background-color: #626980; color: black; padding: 20px; height: 300px;">
-                    <p>Graph</p>
-                </div>
-
-                <!-- Add to Portfolio / Add to Watchlist -->
-                <div style="width: 40%; display: flex; flex-direction: column; justify-content: space-between; padding-left: 20px;">
-                    <div>
-                        <button class="btn btn-success" style="color: white; width: 100%; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: none;">Add to Portfolio</button>
-                        <button class="btn btn-success" style="color: white; width: 100%; padding: 15px; border-radius: 5px; border: none;">Add to Watchlist</button>
-                    </div>
-                    <div style="margin-top: 20px;">
-                    <div style="background-color: #626980; color: black; padding: 20px; height: 150px;">
-                        <p>Numerical details will be displayed here</p>
-                    </div>
-                </div>
+            <!-- Stock Graph Section -->
+            <div style="margin-top: 20px;">
+                <h5>Graph</h5>
+            <div style="background-color: #626980; padding: 20px; border-radius: 5px; height: 750px;">
+                <StockGraph />
             </div>
             </div>
 
             <!-- Stock Information Section -->
             <div style="margin-top: 20px;">
                 <h5>Details</h5>
-                <div style="background-color: #626980; color: black; padding: 20px; margin-top: 10px;">
+                <div style="background-color: #626980; color: black; padding: 20px; margin-top: 10px; border-radius: 5px;">
                     <p>@stock.OtherInformation</p>
                 </div>
             </div>

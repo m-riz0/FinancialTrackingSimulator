@@ -4,6 +4,7 @@ using FinancialTrackingSimulator.Context;
 using FinancialTrackingSimulator.Model;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using ApexCharts;
 
 var builder = WebApplication.CreateBuilder(args);
 
