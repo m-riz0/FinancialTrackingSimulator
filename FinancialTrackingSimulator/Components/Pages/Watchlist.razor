@@ -3,9 +3,12 @@
 @using FinancialTrackingSimulator.Model
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @attribute [Authorize]
 @inject StockPriceService StockPriceService
 @inject NavigationManager NavigationManager
+@inject DatabaseContext DbContext
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Watchlist</PageTitle>
 
@@ -26,7 +29,10 @@
                         <td>@stock.Name</td>
                         <td>@($"${stock.Price:F2}")</td>
                         <td>
-                            <button class="btn btn-success" @onclick="() => AddToWatchlist(stock)">Add to Watchlist</button>
+                            <!-- Passing stock to AddStock component -->
+                            <Shared.AddStock StockToAdd="stock" UserWatchlist="userWatchlist" OnStockAdded="HandleStockAdded">
+                                <button class="btn btn-success">Add to Watchlist</button>
+                            </Shared.AddStock>
                         </td>
                     </tr>
                 }
@@ -78,6 +84,7 @@
 </body>
 
 @code {
+    private Model.Watchlist userWatchlist;
     private List<Stock> watchlistStocks = new List<Stock>();
     private List<Stock> pagedWatchlistStocks = new List<Stock>();
     private List<Stock> searchedStocks;
@@ -88,11 +95,24 @@
     private int pageSize = 10;
     private int totalPages => (int)Math.Ceiling((double)watchlistStocks.Count / pageSize);
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        // Load user's watchlist
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User?.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        
+        if (userId != null)
+        {
+            userWatchlist = await DbContext.Watchlists.Include(w => w.Stocks).FirstOrDefaultAsync(w => w.User.Id == userId);
+            if (userWatchlist != null)
+            {
+                watchlistStocks = userWatchlist.Stocks.ToList();
+                UpdatePagedWatchlist();
+            }
+        }
+
         // Subscribe to stock price updates
         StockPriceService.OnPricesUpdated += RefreshUI;
-        UpdatePagedWatchlist(); // Initialize the paginated watchlist
     }
 
     private void RefreshUI()
@@ -160,14 +180,12 @@
         }
     }
 
-    // Add a stock to the user's watchlist
-    private void AddToWatchlist(Stock stock)
+    private async Task HandleStockAdded()
     {
-        if (!watchlistStocks.Any(s => s.Id == stock.Id))
-        {
-            watchlistStocks.Add(stock);
-            UpdatePagedWatchlist();
-        }
+        // Reload watchlist and update the UI after a stock is added
+        watchlistStocks = userWatchlist.Stocks.ToList();
+        UpdatePagedWatchlist();
+        await InvokeAsync(StateHasChanged);
     }
 
     // Remove a stock from the user's watchlist
@@ -182,5 +200,4 @@
     {
         NavigationManager.NavigateTo($"/stockinformation/{stockId}");
     }
-
 }
