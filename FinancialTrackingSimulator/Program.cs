@@ -28,6 +28,7 @@ builder.Services.AddAuthentication(options =>
 .AddIdentityCookies();
 
 builder.Services.AddDbContext<DatabaseContext>();
+builder.Services.AddScoped<WatchlistProvider>();
 
 builder.Services.AddIdentityCore<User>()
     .AddEntityFrameworkStores<DatabaseContext>()

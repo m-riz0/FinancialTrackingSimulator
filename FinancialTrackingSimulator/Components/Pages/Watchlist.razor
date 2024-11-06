@@ -1,14 +1,14 @@
 ﻿@page "/watchlist"
 @using FinancialTrackingSimulator.Context
 @using FinancialTrackingSimulator.Model
+@using FinancialTrackingSimulator.Context
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
-@using System.Security.Claims
 @attribute [Authorize]
+@inject WatchlistProvider WatchlistProvider
+@inject DatabaseContext DbContext
 @inject StockPriceService StockPriceService
 @inject NavigationManager NavigationManager
-@inject DatabaseContext DbContext
-@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Watchlist</PageTitle>
 
@@ -29,10 +29,7 @@
                         <td>@stock.Name</td>
                         <td>@($"${stock.Price:F2}")</td>
                         <td>
-                            <!-- Passing stock to AddStock component -->
-                            <Shared.AddStock StockToAdd="stock" UserWatchlist="userWatchlist" OnStockAdded="HandleStockAdded">
-                                <button class="btn btn-success">Add to Watchlist</button>
-                            </Shared.AddStock>
+                            <button class="btn btn-success" @onclick="() => AddToWatchlist(stock)">Add to Watchlist</button>
                         </td>
                     </tr>
                 }
@@ -73,21 +70,13 @@
                 }
             </tbody>
         </table>
-
-        <!-- Pagination Controls -->
-        <div class="pagination-container">
-            <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
-            <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
-            <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
-        </div>
     }
 </body>
 
 @code {
-    private Model.Watchlist userWatchlist;
     private List<Stock> watchlistStocks = new List<Stock>();
     private List<Stock> pagedWatchlistStocks = new List<Stock>();
-    private List<Stock> searchedStocks;
+    private List<Stock> searchedStocks = new List<Stock>(); // Initialize to prevent null references
     private string searchTerm = string.Empty;
 
     // Pagination variables
@@ -95,41 +84,15 @@
     private int pageSize = 10;
     private int totalPages => (int)Math.Ceiling((double)watchlistStocks.Count / pageSize);
 
+    private bool CanGoNext => currentPage < totalPages;
+    private bool CanGoPrevious => currentPage > 1;
+
     protected override async Task OnInitializedAsync()
     {
-        // Load user's watchlist
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var userId = authState.User?.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-        
-        if (userId != null)
-        {
-            userWatchlist = await DbContext.Watchlists.Include(w => w.Stocks).FirstOrDefaultAsync(w => w.User.Id == userId);
-            if (userWatchlist != null)
-            {
-                watchlistStocks = userWatchlist.Stocks.ToList();
-                UpdatePagedWatchlist();
-            }
-        }
-
-        // Subscribe to stock price updates
+        await LoadWatchlistAsync();
         StockPriceService.OnPricesUpdated += RefreshUI;
     }
 
-    private void RefreshUI()
-    {
-        // Reapply filters for search and watchlist when prices update
-        SearchStocks();
-        UpdatePagedWatchlist();
-        InvokeAsync(StateHasChanged); // Ensure UI updates correctly
-    }
-
-    public void Dispose()
-    {
-        // Unsubscribe from event to avoid memory leaks
-        StockPriceService.OnPricesUpdated -= RefreshUI;
-    }
-
-    // Update the pagedWatchlistStocks based on the current page
     private void UpdatePagedWatchlist()
     {
         pagedWatchlistStocks = watchlistStocks
@@ -156,10 +119,31 @@
         }
     }
 
-    private bool CanGoNext => currentPage < totalPages;
-    private bool CanGoPrevious => currentPage > 1;
+    private async Task AddToWatchlist(Stock stock)
+    {
+        await WatchlistProvider.AddStockToWatchlistAsync(stock);
+        await LoadWatchlistAsync();  // Refresh the watchlist after adding a stock
+    }
 
-    // Search for stocks in the StockPriceService
+    private async Task LoadWatchlistAsync()
+    {
+        watchlistStocks = await WatchlistProvider.GetAllWatchlistStocksAsync();
+        UpdatePagedWatchlist();  // Refresh the pagination
+        InvokeAsync(StateHasChanged);  // Update the UI
+    }
+
+    private async Task RemoveFromWatchlist(Stock stock)
+    {
+        await WatchlistProvider.RemoveStockFromWatchlistAsync(stock.Id);
+        await LoadWatchlistAsync();  // Refresh the watchlist after removing a stock
+    }
+
+    private void RefreshUI()
+    {
+        SearchStocks();
+        InvokeAsync(StateHasChanged);
+    }
+
     private void UpdateSearchTerm(ChangeEventArgs e)
     {
         searchTerm = e.Value.ToString();
@@ -176,28 +160,19 @@
         }
         else
         {
-            searchedStocks = null; // Clear search results if the search term is empty
+            searchedStocks = new List<Stock>(); // Clear search results
         }
+
+        InvokeAsync(StateHasChanged);  // Ensure the UI updates
     }
 
-    private async Task HandleStockAdded()
-    {
-        // Reload watchlist and update the UI after a stock is added
-        watchlistStocks = userWatchlist.Stocks.ToList();
-        UpdatePagedWatchlist();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    // Remove a stock from the user's watchlist
-    private void RemoveFromWatchlist(Stock stock)
-    {
-        watchlistStocks.Remove(stock);
-        UpdatePagedWatchlist();
-    }
-
-    // Navigate to the stock information page based on the stock's Id
     private void NavigateToStockInfo(int stockId)
     {
         NavigationManager.NavigateTo($"/stockinformation/{stockId}");
+    }
+
+    public void Dispose()
+    {
+        StockPriceService.OnPricesUpdated -= RefreshUI;
     }
 }
