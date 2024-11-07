@@ -21,10 +21,12 @@ public class WatchlistProvider
 
     public async Task AddStockToWatchlistAsync(Stock stock)
     {
+        // Attempt to retrieve the existing watchlist
         var watchlist = await _context.Watchlists
             .Include(w => w.Stocks)
             .FirstOrDefaultAsync();
 
+        // Create the watchlist if it doesn't exist
         if (watchlist == null)
         {
             watchlist = new Watchlist { Stocks = new List<Stock> { stock } };
@@ -32,9 +34,11 @@ public class WatchlistProvider
         }
         else
         {
+            // Add stock to the existing watchlist
             watchlist.Stocks.Add(stock);
         }
 
+        // Save changes to the database
         await _context.SaveChangesAsync();
     }
 
