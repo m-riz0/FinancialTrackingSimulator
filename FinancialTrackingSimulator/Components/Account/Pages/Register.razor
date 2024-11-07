@@ -64,6 +64,7 @@
 </body>
 
 @code {
+    // Handles user registration, including form data capture, validation, error handling, and post-registration actions like sign-in and redirect.
     private IEnumerable<IdentityError>? identityErrors;
 
     [SupplyParameterFromForm]
@@ -75,12 +76,15 @@
     private string? statusMessage => identityErrors is null ? null : string.Join(" ", identityErrors.Select(error => error.Description));
     private bool isError;
 
+    // Registers a new user using the provided form data
     public async Task RegisterUser(EditContext editContext)
     {
         var user = Activator.CreateInstance<User>();
         await UserStore.SetUserNameAsync(user, Model.Email, CancellationToken.None);
+
         var emailStore = (IUserEmailStore<User>)UserStore;
         await emailStore.SetEmailAsync(user, Model.Email, CancellationToken.None);
+
         var result = await UserManager.CreateAsync(user, Model.Password);
 
         if (!result.Succeeded)
@@ -91,13 +95,14 @@
         }
 
         Logger.LogInformation("User created a new account with password.");
-
         var userId = await UserManager.GetUserIdAsync(user);
 
+        // Manages sign-in and redirection after successful registration.
         await SignInManager.SignInAsync(user, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl);
     }
 
+    // Defines the data and validation rules for the registration form (email, password, and confirmation).
     private sealed class RegisterModel
     {
         [Required(ErrorMessage = "Please enter your email.")]
