@@ -21,14 +21,14 @@ public class WatchlistProvider
 
     public async Task AddStockToWatchlistAsync(Stock stock, User user)
     {
-        // Attempt to retrieve the existing watchlist
+        // Attempt to retrieve the existing watchlist for the user
         var watchlist = await _context.Watchlists
             .Include(w => w.Stocks)
             .Include(w => w.User)
             .Where(w => user.Id == w.User.Id)
             .FirstOrDefaultAsync();
 
-        // Create the watchlist if it doesn't exist
+        // If no watchlist exists for the user, create one
         if (watchlist == null)
         {
             watchlist = new Watchlist { User = user };
@@ -36,12 +36,21 @@ public class WatchlistProvider
             await _context.SaveChangesAsync();
         }
 
-        // Add stock to the existing watchlist
-        watchlist.Stocks.Add(stock);
-
-        // Save changes to the database
-        await _context.SaveChangesAsync();
+        // Check if the stock is already in the user's watchlist
+        var existingStock = watchlist.Stocks.FirstOrDefault(s => s.Id == stock.Id);
+        if (existingStock == null)
+        {
+            // Add the stock to the watchlist only if it doesn't already exist
+            watchlist.Stocks.Add(stock);
+            await _context.SaveChangesAsync();
+            Console.WriteLine($"{stock.Name} added to watchlist.");
+        }
+        else
+        {
+            Console.WriteLine($"{stock.Name} is already in the watchlist.");
+        }
     }
+
 
     public async Task RemoveStockFromWatchlistAsync(int stockId)
     {

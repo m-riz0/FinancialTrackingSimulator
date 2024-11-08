@@ -19,7 +19,7 @@
 
         @if (!string.IsNullOrEmpty(successMessage))
         {
-            <div style="background-color: #208454; color: white; padding: 10px; margin-top: 20px; border-radius: 5px;">
+            <div style="background-color: grey; color: white; padding: 10px; margin-top: 20px; margin-bottom: 20px; border-radius: 5px;">
                 @successMessage
             </div>
         }
@@ -163,9 +163,19 @@
 
             if (user != null && stock != null)
             {
-                await WatchlistProvider.AddStockToWatchlistAsync(stock, user);
-                successMessage = $"{stock.Name} has been added to your watchlist.";
-                InvokeAsync(StateHasChanged);  // Update UI immediately
+                var watchlist = await WatchlistProvider.GetAllWatchlistStocksAsync();
+                var existingStock = watchlist.FirstOrDefault(s => s.Id == stock.Id);
+
+                if (existingStock == null)
+                {
+                    await WatchlistProvider.AddStockToWatchlistAsync(stock, user);
+                    successMessage = $"{stock.Name} has been added to your watchlist.";
+                }
+                else
+                {
+                    successMessage = $"{stock.Name} is already in your watchlist.";
+                }
+                InvokeAsync(StateHasChanged); // Update UI immediately
                 _ = ClearSuccessMessageAfterDelay(); // Start timer to clear the message
             }
             else
