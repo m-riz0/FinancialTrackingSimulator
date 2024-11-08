@@ -19,24 +19,25 @@ public class WatchlistProvider
             .ToListAsync();
     }
 
-    public async Task AddStockToWatchlistAsync(Stock stock)
+    public async Task AddStockToWatchlistAsync(Stock stock, User user)
     {
         // Attempt to retrieve the existing watchlist
         var watchlist = await _context.Watchlists
             .Include(w => w.Stocks)
+            .Include(w => w.User)
+            .Where(w => user.Id == w.User.Id)
             .FirstOrDefaultAsync();
 
         // Create the watchlist if it doesn't exist
         if (watchlist == null)
         {
-            watchlist = new Watchlist { Stocks = new List<Stock> { stock } };
+            watchlist = new Watchlist { User = user };
             _context.Watchlists.Add(watchlist);
+            await _context.SaveChangesAsync();
         }
-        else
-        {
-            // Add stock to the existing watchlist
-            watchlist.Stocks.Add(stock);
-        }
+
+        // Add stock to the existing watchlist
+        watchlist.Stocks.Add(stock);
 
         // Save changes to the database
         await _context.SaveChangesAsync();

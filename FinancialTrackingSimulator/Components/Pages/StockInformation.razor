@@ -6,14 +6,23 @@
 @using FinancialTrackingSimulator.Components.Shared
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
+@inject WatchlistProvider WatchlistProvider
 @inject DatabaseContext DbContext
 @inject StockPriceService StockPriceService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Stock Information</PageTitle>
 
 <body style="background-color:#323a56; color: white; font-family: Arial, sans-serif;">
     <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
         <h3>Stock Information</h3>
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div style="background-color: #208454; color: white; padding: 10px; margin-top: 20px; border-radius: 5px;">
+                @successMessage
+            </div>
+        }
 
         @if (stock != null)
         {
@@ -38,7 +47,7 @@
                     <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;">
                         Add to Portfolio
                     </button>
-                    <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;">
+                    <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;" @onclick="AddToWatchlist">
                         Add to Watchlist
                     </button>
                 </div>
@@ -108,6 +117,7 @@
 
     private Stock stock;
     private List<Stock> recommendedStocks = new List<Stock>();
+    private string successMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,6 +151,39 @@
         StockPriceService.StockUpdated -= OnStockUpdated;
         // Subscribe to the event
         StockPriceService.StockUpdated += OnStockUpdated;
+    }
+
+    private async Task AddToWatchlist()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var username = authState.User?.Identity?.Name;
+            var user = await DbContext.Users.FirstOrDefaultAsync(u => u.UserName == username);
+
+            if (user != null && stock != null)
+            {
+                await WatchlistProvider.AddStockToWatchlistAsync(stock, user);
+                successMessage = $"{stock.Name} has been added to your watchlist.";
+                InvokeAsync(StateHasChanged);  // Update UI immediately
+                _ = ClearSuccessMessageAfterDelay(); // Start timer to clear the message
+            }
+            else
+            {
+                Console.WriteLine("Error: User or stock not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding stock to watchlist: {ex.Message}");
+        }
+    }
+
+    private async Task ClearSuccessMessageAfterDelay()
+    {
+        await Task.Delay(3000); // 3-second delay
+        successMessage = null;
+        InvokeAsync(StateHasChanged); // Clear message in UI
     }
 
     private void OnStockUpdated(Stock updatedStock)

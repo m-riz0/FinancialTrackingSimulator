@@ -8,6 +8,7 @@
 @inject DatabaseContext DbContext
 @inject StockPriceService StockPriceService
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Watchlist</PageTitle>
 
@@ -69,6 +70,12 @@
                 }
             </tbody>
         </table>
+
+        <div class="pagination-container">
+            <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
+            <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
+        </div>
     }
 </body>
 
@@ -120,7 +127,12 @@
 
     private async Task AddToWatchlist(Stock stock)
     {
-        await WatchlistProvider.AddStockToWatchlistAsync(stock);
+        // Get the user
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var username = authState!.User!.Identity!.Name!;
+        var user = DbContext.Users.FirstOrDefault(user => user.UserName == username);
+
+        await WatchlistProvider.AddStockToWatchlistAsync(stock, user);
         await LoadWatchlistAsync();  // Refresh the watchlist after adding a stock
     }
 
