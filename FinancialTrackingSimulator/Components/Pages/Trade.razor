@@ -14,6 +14,7 @@
 <body style="background-color:#323a56">
     <h3 style="color: white">Trade</h3>
 
+    <!-- Search bar for filtering stocks by name -->
     <input type="text" @oninput="UpdateSearchTerm" placeholder="Search stocks..." class="form-control" style="margin-bottom: 20px;" />
 
     @if (pagedStocks == null)
@@ -26,6 +27,7 @@
     }
     else
     {
+        <!-- Display stocks in a paginated table -->
         <table class="table table-striped" style="color: white">
             <thead>
                 <tr>
@@ -45,6 +47,7 @@
                             @(stock.DailyChange >= 0 ? "+" : "")@stock.DailyChange%
                         </td>
                         <td>
+                            <!-- Action buttons for each stock -->
                             <button class="btn btn-success">Add Stock</button>
                             <button class="btn btn-danger" @onclick="() => OpenPredictionPopup(stock)">Performance Prediction</button>
                             <button class="btn btn-primary" @onclick="() => NavigateToStockInfo(stock.Id)">View</button>
@@ -54,6 +57,7 @@
             </tbody>
         </table>
 
+        <!-- Pagination controls to navigate through pages -->
         <div class="pagination-container">
             <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
             <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
@@ -61,6 +65,7 @@
         </div>
     }
 
+    <!-- Popup for stock performance prediction -->
     @if (showPredictionPopup)
     {
         <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
@@ -101,7 +106,7 @@
     private bool showPredictionPopup = false;
     private string predictionResult;
 
-    // Pagination variables
+    // Pagination variables to control current page, items per page, and total pages
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalPages => (int)Math.Ceiling((double)filteredStocks.Count / pageSize);
@@ -111,6 +116,7 @@
 
     protected override void OnInitialized()
     {
+        // Initialize stocks, filteredStocks, and set up real-time updates
         stocks = StockPriceService.GetAllStocks();
         filteredStocks = stocks;
         UpdatePagedStocks();
@@ -120,6 +126,7 @@
 
     private void RefreshUI()
     {
+        // Refresh the UI by filtering and updating the paginated stock list
         FilterStocks();
         UpdatePagedStocks();
         InvokeAsync(StateHasChanged);
@@ -127,11 +134,13 @@
 
     public void Dispose()
     {
+        // Unsubscribe from real-time updates upon component disposal
         StockPriceService.OnPricesUpdated -= RefreshUI;
     }
 
     private void UpdateSearchTerm(ChangeEventArgs e)
     {
+        // Update search term based on input, reset to first page, and filter stocks
         searchTerm = e.Value.ToString();
         FilterStocks();
         currentPage = 1;
@@ -140,6 +149,7 @@
 
     private void FilterStocks()
     {
+        // Filter stocks based on search term, displaying matching stocks
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
             filteredStocks = stocks;
@@ -154,6 +164,7 @@
 
     private void UpdatePagedStocks()
     {
+        // Update pagedStocks to show only stocks for the current page
         pagedStocks = filteredStocks
             .Skip((currentPage - 1) * pageSize)
             .Take(pageSize)
@@ -162,6 +173,7 @@
 
     private void NextPage()
     {
+        // Navigate to the next page if possible and update paged stocks
         if (CanGoNext)
         {
             currentPage++;
@@ -171,6 +183,7 @@
 
     private void PreviousPage()
     {
+        // Navigate to the previous page if possible and update paged stocks
         if (CanGoPrevious)
         {
             currentPage--;
@@ -178,16 +191,18 @@
         }
     }
 
-    private bool CanGoNext => currentPage < totalPages;
-    private bool CanGoPrevious => currentPage > 1;
+    private bool CanGoNext => currentPage < totalPages; // Check if next page is available
+    private bool CanGoPrevious => currentPage > 1; // Check if previous page is available
 
     private void NavigateToStockInfo(int stockId)
     {
+        // Navigate to the Stock Information page
         NavigationManager.NavigateTo($"/stockinformation/{stockId}");
     }
 
     private void OnStockUpdated(Stock updatedStock)
     {
+        // Update selected stock's data if modified
         if (selectedStock != null && selectedStock.Id == updatedStock.Id)
         {
             selectedStock = updatedStock;
@@ -197,6 +212,7 @@
 
     private void OpenPredictionPopup(Stock stock)
     {
+        // Open the prediction popup for the selected stock
         selectedStock = stock;
         showPredictionPopup = true;
         predictionResult = null;
@@ -204,12 +220,14 @@
 
     private void ClosePredictionPopup()
     {
+        // Close the prediction popup
         showPredictionPopup = false;
         selectedStock = null;
     }
 
     private void MakePrediction()
     {
+        // Generate a prediction for the selected stock's performance
         predictionResult = StockPriceService.PredictStockTrend(selectedStock);
     }
 }
