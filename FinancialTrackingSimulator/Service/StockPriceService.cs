@@ -71,8 +71,8 @@ public class StockPriceService
             { 53, new Stock { Id = 53, Name = "The Charles Schwab Corp. (SCHW)", Price = 72.01m, DailyChange = 0.85m, OtherInformation = "The Charles Schwab Corporation is a leading provider of investment and financial services, founded in 1971 by Charles R. Schwab. The company offers a range of services, including brokerage, wealth management, banking, and retirement planning. Schwab’s focus on customer-centric solutions, low-cost investment options, and digital tools has made it a trusted name in the financial services industry. The company’s acquisition of TD Ameritrade has further expanded its market presence and client base." }}
         };
 
-        // Set up a timer to simulate price changes every minute 
-        _timer = new Timer(SimulatePriceChanges, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+        // Timer to simulate price changes every 10 seconds
+        _timer = new Timer(SimulatePriceChanges, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
     }
 
     // Simulate price changes for all stocks in-memory
