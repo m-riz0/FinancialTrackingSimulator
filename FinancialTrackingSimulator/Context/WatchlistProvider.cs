@@ -51,7 +51,6 @@ public class WatchlistProvider
         }
     }
 
-
     public async Task RemoveStockFromWatchlistAsync(int stockId)
     {
         var watchlist = await _context.Watchlists

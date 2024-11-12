@@ -1,18 +1,195 @@
-﻿@page "/portfolio"
+﻿@* @page "/portfolio"
 @using FinancialTrackingSimulator.Context
 @using FinancialTrackingSimulator.Model
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @attribute [Authorize]
-@inject NavigationManager NavigationManager
+@inject PortfolioProvider PortfolioProvider
+@inject DatabaseContext DbContext
 @inject StockPriceService StockPriceService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Portfolio</PageTitle>
 
 <body style="background-color:#323a56">
     <h3 style="color: white">Portfolio</h3>
+
+    <!-- Search bar for stocks in the system -->
+    <input type="text" @oninput="UpdateSearchTerm" placeholder="Search stocks to add..." class="form-control" style="margin-bottom: 20px;" />
+
+    <!-- Display search results from StockPriceService -->
+    @if (searchedStocks != null && searchedStocks.Any())
+    {
+        <table class="table" style="color: white">
+            <tbody>
+                @foreach (var stock in searchedStocks)
+                {
+                    <tr>
+                        <td>@stock.Name</td>
+                        <td>@($"${stock.Price:F2}")</td>
+                        <td>
+                            <button class="btn btn-success" @onclick="() => AddToPortfolio(stock)">Add Stock</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <!-- Portfolio Table -->
+    @if (portfolioStocks == null || !portfolioStocks.Any())
+    {
+        <p style="color: white">Your portfolio is currently empty. Add stocks to track their performance.</p>
+    }
+    else
+    {
+        <table class="table table-striped" style="color: white">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Value</th>
+                    <th>Quantity</th>
+                    <th>Daily Change</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var stock in pagedPortfolioStocks)
+                {
+                    <tr>
+                        <td>@stock.Name</td>
+                        <td>@($"${stock.Price:F2}")</td>
+                        <td>@($"${stock.Price * portfolio.Quantity:F2}")</td> <!-- Value calculated as Price * Quantity -->
+                        <td>@portfolio.Quantity</td>
+                        <td style="color:@(stock.DailyChange >= 0 ? "green" : "red")">
+                            @(stock.DailyChange >= 0 ? "+" : "")@stock.DailyChange%
+                        </td>
+                        <td>
+                            <button class="btn btn-success">Edit Stock</button>
+                            <button class="btn btn-danger" @onclick="() => RemoveFromPortfolio(stock)">Delete</button>
+                            <button class="btn btn-primary" @onclick="() => NavigateToStockInfo(stock.Id)">View</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="pagination-container">
+            <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)" class="btn btn-primary">Previous</button>
+            <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
+            <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
+        </div>
+    }
 </body>
 
 @code {
+    private List<Stock> portfolioStocks = new List<Stock>();
+    private List<Stock> pagedPortfolioStocks = new List<Stock>();
+    private List<Stock> searchedStocks = new List<Stock>(); // Initialize to prevent null references
+    private string searchTerm = string.Empty;
 
+    // Pagination variables
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling((double)portfolioStocks.Count / pageSize);
+
+    private bool CanGoNext => currentPage < totalPages;
+    private bool CanGoPrevious => currentPage > 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPortfolioAsync();
+        StockPriceService.OnPricesUpdated += RefreshUI;
+    }
+
+    private void UpdatePagedPortfolio()
+    {
+        pagedPortfolioStocks = portfolioStocks
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            currentPage++;
+            UpdatePagedPortfolio();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (CanGoPrevious)
+        {
+            currentPage--;
+            UpdatePagedPortfolio();
+        }
+    }
+
+    private async Task AddToPortfolio(Stock stock)
+    {
+        // Get the user
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var username = authState!.User!.Identity!.Name!;
+        var user = DbContext.Users.FirstOrDefault(user => user.UserName == username);
+
+        await PortfolioProvider.AddStockToPortfolioAsync(stock, user);
+        await LoadPortfolioAsync();  // Refresh the portfolio after adding a stock
+    }
+
+    private async Task LoadPortfolioAsync()
+    {
+        portfolioStocks = await PortfolioProvider.GetAllPortfolioStocksAsync();
+        UpdatePagedPortfolio();  // Refresh the pagination
+        InvokeAsync(StateHasChanged);  // Update the UI
+    }
+
+    private async Task RemoveFromPortfolio(Stock stock)
+    {
+        await PortfolioProvider.RemoveStockFromPortfolioAsync(stock.Id);
+        await LoadPortfolioAsync();  // Refresh the portfolio after removing a stock
+    }
+
+    private void RefreshUI()
+    {
+        SearchStocks();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateSearchTerm(ChangeEventArgs e)
+    {
+        searchTerm = e.Value.ToString();
+        SearchStocks();
+    }
+
+    private void SearchStocks()
+    {
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            searchedStocks = StockPriceService.GetAllStocks()
+                .Where(s => s.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        else
+        {
+            searchedStocks = new List<Stock>(); // Clear search results
+        }
+
+        InvokeAsync(StateHasChanged);  // Ensure the UI updates
+    }
+
+    private void NavigateToStockInfo(int stockId)
+    {
+        NavigationManager.NavigateTo($"/stockinformation/{stockId}");
+    }
+
+    public void Dispose()
+    {
+        StockPriceService.OnPricesUpdated -= RefreshUI;
+    }
 }
+  *@
