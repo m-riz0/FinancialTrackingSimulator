@@ -1,4 +1,4 @@
-﻿@* @page "/portfolio"
+﻿@page "/portfolio"
 @using FinancialTrackingSimulator.Context
 @using FinancialTrackingSimulator.Model
 @using Microsoft.AspNetCore.Authorization
@@ -61,8 +61,8 @@
                     <tr>
                         <td>@stock.Name</td>
                         <td>@($"${stock.Price:F2}")</td>
-                        <td>@($"${stock.Price * portfolio.Quantity:F2}")</td> <!-- Value calculated as Price * Quantity -->
-                        <td>@portfolio.Quantity</td>
+                        <td>@($"${stock.Price:F2}")</td> <!-- Value field -->
+                        <td>1</td> <!-- Quantity field -->
                         <td style="color:@(stock.DailyChange >= 0 ? "green" : "red")">
                             @(stock.DailyChange >= 0 ? "+" : "")@stock.DailyChange%
                         </td>
@@ -192,4 +192,3 @@
         StockPriceService.OnPricesUpdated -= RefreshUI;
     }
 }
-  *@
