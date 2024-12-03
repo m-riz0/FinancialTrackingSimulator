@@ -7,12 +7,21 @@
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
 @inject StockPriceService StockPriceService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject PortfolioProvider PortfolioProvider
+@inject DatabaseContext DbContext
 
 <PageTitle>Trade</PageTitle>
 
 <body style="background-color:#323a56">
     <h3 style="color: white">Trade</h3>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div style="background-color: grey; color: white; padding: 10px; margin-top: 20px; margin-bottom: 20px; border-radius: 5px;">
+            @successMessage
+        </div>
+    }
 
     <!-- Search bar for filtering stocks by name -->
     <input type="text" @oninput="UpdateSearchTerm" placeholder="Search stocks..." class="form-control" style="margin-bottom: 20px;" />
@@ -48,7 +57,7 @@
                         </td>
                         <td>
                             <!-- Action buttons for each stock -->
-                            <button class="btn btn-success">Add Stock</button>
+                            <button class="btn btn-success" @onclick="() => AddToPortfolio(stock)">Add Stock</button>
                             <button class="btn btn-danger" @onclick="() => OpenPredictionPopup(stock)">Performance Prediction</button>
                             <button class="btn btn-primary" @onclick="() => NavigateToStockInfo(stock.Id)">View</button>
                         </td>
@@ -101,10 +110,12 @@
 
 @code {
     private List<Stock> pagedStocks;
+    private Stock stock;
     private string searchTerm = string.Empty;
     private Stock selectedStock;
     private bool showPredictionPopup = false;
     private string predictionResult;
+    private string successMessage;
 
     // Pagination variables to control current page, items per page, and total pages
     private int currentPage = 1;
@@ -229,5 +240,51 @@
     {
         // Generate a prediction for the selected stock's performance
         predictionResult = StockPriceService.PredictStockTrend(selectedStock);
+    }
+
+    private async Task AddToPortfolio(Stock stock)
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var username = authState.User?.Identity?.Name;
+            var user = await DbContext.Users.FirstOrDefaultAsync(u => u.UserName == username);
+
+            if (user != null && stock != null)
+            {
+                // Fetch portfolio stocks
+                var portfolio = await PortfolioProvider.GetAllPortfolioStocksAsync();
+                var existingStock = portfolio.FirstOrDefault(s => s.Id == stock.Id);
+
+                if (existingStock == null)
+                {
+                    // Add stock to portfolio with default Quantity
+                    await PortfolioProvider.AddStockToPortfolioAsync(stock, user);
+                    successMessage = $"{stock.Name} has been added to your portfolio. Go to Portfolio page to edit the addition.";
+                }
+                else
+                {
+                    successMessage = $"{stock.Name} is already in your portfolio.";
+                }
+                InvokeAsync(StateHasChanged); // Update UI immediately
+                _ = ClearSuccessMessageAfterDelay(); // Start timer to clear the message
+            }
+            else
+            {
+                Console.WriteLine("Error: User or stock not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding stock to portfolio: {ex.Message}");
+        }
+    }
+
+
+    private async Task ClearSuccessMessageAfterDelay()
+    {
+        await Task.Delay(3000); // 3-second delay
+        successMessage = null;
+        InvokeAsync(StateHasChanged); // Clear message in UI
     }
 }

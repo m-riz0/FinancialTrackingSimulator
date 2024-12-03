@@ -7,6 +7,7 @@
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
 @inject WatchlistProvider WatchlistProvider
+@inject PortfolioProvider PortfolioProvider
 @inject DatabaseContext DbContext
 @inject StockPriceService StockPriceService
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -44,7 +45,7 @@
 
                 <!-- Add to Portfolio / Add to Watchlist Buttons -->
                 <div style="display: flex; gap: 15px; align-items: center; margin-top: 35px;">
-                    <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;">
+                    <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;" @onclick="AddToPortfolio">
                         Add to Portfolio
                     </button>
                     <button class="btn btn-success" style="color: white; padding: 10px 15px; border-radius: 5px; font-size: 18px; border: none; line-height: 1.5;" @onclick="AddToWatchlist">
@@ -186,6 +187,44 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error adding stock to watchlist: {ex.Message}");
+        }
+    }
+
+    private async Task AddToPortfolio()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var username = authState.User?.Identity?.Name;
+            var user = await DbContext.Users.FirstOrDefaultAsync(u => u.UserName == username);
+
+            if (user != null && stock != null)
+            {
+                // Fetch portfolio stocks
+                var portfolio = await PortfolioProvider.GetAllPortfolioStocksAsync();
+                var existingStock = portfolio.FirstOrDefault(s => s.Id == stock.Id);
+
+                if (existingStock == null)
+                {
+                    // Add stock to portfolio with default Quantity 
+                    await PortfolioProvider.AddStockToPortfolioAsync(stock, user);
+                    successMessage = $"{stock.Name} has been added to your portfolio. Go to Portfolio page to edit the addition.";
+                }
+                else
+                {
+                    successMessage = $"{stock.Name} is already in your portfolio.";
+                }
+                InvokeAsync(StateHasChanged); // Update UI immediately
+                _ = ClearSuccessMessageAfterDelay(); // Start timer to clear the message
+            }
+            else
+            {
+                Console.WriteLine("Error: User or stock not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding stock to portfolio: {ex.Message}");
         }
     }
 
