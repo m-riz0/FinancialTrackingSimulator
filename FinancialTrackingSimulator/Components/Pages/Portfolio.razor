@@ -67,7 +67,7 @@
                             @(stock.DailyChange >= 0 ? "+" : "")@stock.DailyChange%
                         </td>
                         <td>
-                            <button class="btn btn-success">Edit Stock</button>
+                            <button class="btn btn-success" @onclick="() => StartEditing(stock)">Edit Stock</button>
                             <button class="btn btn-danger" @onclick="() => RemoveFromPortfolio(stock)">Delete</button>
                             <button class="btn btn-primary" @onclick="() => NavigateToStockInfo(stock.Id)">View</button>
                         </td>
@@ -81,6 +81,29 @@
             <span style="color: white; margin: 0 15px;">Page @currentPage of @totalPages</span>
             <button @onclick="NextPage" disabled="@(!CanGoNext)" class="btn btn-primary">Next</button>
         </div>
+
+        <!-- Edit Stock Popup -->
+        @if (showEditPopup)
+        {
+            <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Quantity for @selectedStock?.Name</h5>
+                            <button type="button" class="btn-close" @onclick="CancelEdit"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="quantity">Enter New Quantity:</label>
+                            <input type="number" id="quantity" class="form-control" @bind="newQuantity" min="1" />
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" @onclick="SaveChanges">Save Changes</button>
+                            <button class="btn btn-danger" @onclick="CancelEdit">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     }
 </body>
 
@@ -89,6 +112,9 @@
     private List<Stock> pagedPortfolioStocks = new List<Stock>();
     private List<Stock> searchedStocks = new List<Stock>(); // Initialize to prevent null references
     private string searchTerm = string.Empty;
+    private bool showEditPopup = false; // Controls the visibility of the popup
+    private int newQuantity; // Temporarily stores the quantity entered by the user
+    private Stock? selectedStock; // Tracks the currently selected stock for editing
 
     // Pagination variables
     private int currentPage = 1;
@@ -190,5 +216,29 @@
     public void Dispose()
     {
         StockPriceService.OnPricesUpdated -= RefreshUI;
+    }
+
+    private void StartEditing(Stock stock)
+    {
+        // Assign the selected stock and open the popup
+        selectedStock = stock;
+        newQuantity = 1;
+        showEditPopup = true;
+    }
+
+    private void CancelEdit()
+    {
+        // Close the popup and clear the selected stock
+        showEditPopup = false;
+        selectedStock = null;
+        newQuantity = 0;
+    }
+
+    private void SaveChanges()
+    {
+        // Saves the newly entered changes for the Portfolio
+        Console.WriteLine($"Saving changes for {selectedStock?.Name} with new quantity {newQuantity}");
+        showEditPopup = false;
+        selectedStock = null;
     }
 }
