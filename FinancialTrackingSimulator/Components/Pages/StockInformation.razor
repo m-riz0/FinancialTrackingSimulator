@@ -268,9 +268,12 @@
         return dailyChange >= 0 ? "#208454" : "#e03444"; // Green for positive, red for negative
     }
 
-    // Navigate to the stock information page of the selected stock
+    // Navigate to the stock information page of the selected stock and refresh
     private void NavigateToStock(int stockId)
     {
-        NavigationManager.NavigateTo($"/stockinformation/{stockId}");
+        var url = $"/stockinformation/{stockId}";
+
+        // Navigate to the new page
+        NavigationManager.NavigateTo(url, forceLoad: true);
     }
 }

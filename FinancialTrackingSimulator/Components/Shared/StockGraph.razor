@@ -59,8 +59,8 @@
             // Add the new data point
             StockData.Add(new StockPricePoint { Timestamp = DateTime.Now, Price = stock.Price });
 
-            // Keep only the last 50 points to avoid clutter
-            if (StockData.Count > 50)
+            // Keep only the last 20 points to avoid clutter
+            if (StockData.Count > 20)
             {
                 StockData.RemoveAt(0);
             }
