@@ -134,5 +134,33 @@ public class StockPriceService
             return _random.Next(2) == 0 ? "rise" : "fall";
         }
     }
+
+    public async Task<List<StockPricePoint>> GetHistoricalPricesAsync(string stockName)
+    {
+        if (!_stockData.Values.Any(s => s.Name == stockName))
+            return new List<StockPricePoint>();
+
+        var stock = _stockData.Values.First(s => s.Name == stockName);
+        var historicalData = new List<StockPricePoint>();
+        var random = new Random();
+
+        // Generate historical data for the past 10 minutes
+        for (int i = 10; i >= 1; i--)
+        {
+            historicalData.Add(new StockPricePoint
+            {
+                Timestamp = DateTime.Now.AddMinutes(-i),
+                Price = stock.Price + random.Next(-5, 5)
+            });
+        }
+
+        return await Task.FromResult(historicalData);
+    }
+}
+
+public class StockPricePoint
+{
+    public DateTime Timestamp { get; set; }
+    public decimal Price { get; set; }
 }
 

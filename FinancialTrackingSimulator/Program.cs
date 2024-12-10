@@ -30,6 +30,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddDbContext<DatabaseContext>();
 builder.Services.AddScoped<WatchlistProvider>();
 builder.Services.AddScoped<PortfolioProvider>();
+builder.Services.AddSingleton<StockPriceService>();
+
 
 builder.Services.AddIdentityCore<User>()
     .AddEntityFrameworkStores<DatabaseContext>()
