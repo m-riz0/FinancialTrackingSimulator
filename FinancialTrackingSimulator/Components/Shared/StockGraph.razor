@@ -5,7 +5,7 @@
 
 <div class="card">
     <ApexChart TItem="StockPricePoint" Title="@($"{SelectedStock} Performance Chart")" Options="ChartOptions">
-        <ApexPointSeries TItem="StockPricePoint" Items="StockData" Name="Price" SeriesType="SeriesType.Line"
+        <ApexPointSeries TItem="StockPricePoint" Items="StockData" Name="Price" SeriesType="SeriesType.Area"
                          XValue="e => e.Timestamp" YValue="e => e.Price" />
     </ApexChart>
 </div>
@@ -26,7 +26,23 @@
             {
                 Stroke = new Stroke
                 {
+                    Curve = Curve.Straight,
                     Colors = new List<string> { "#208454" } // Green line color
+                },
+                Fill = new Fill
+                {
+                    Type = FillType.Gradient,
+                    Gradient = new FillGradient
+                    {
+                        Shade = GradientShade.Light,
+                        ShadeIntensity = 0.8, // Intensity of the gradient
+                        OpacityFrom = 0.5,    // Start of the gradient opacity
+                        OpacityTo = 0.1,        // End of the gradient opacity
+                        InverseColors = false, // Don't invert the gradient colors
+                        GradientToColors = new List<string> { "#208454" }, // Same green as the line
+                        Stops = new List<double> { 0, 100 } // Ensure the stops are of type double
+                    },
+                        Colors = new List<string> { "#208454" } 
                 },
                 Xaxis = new XAxis
                 {
